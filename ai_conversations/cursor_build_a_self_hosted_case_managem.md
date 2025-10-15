@@ -3940,7 +3940,7 @@ ADMIN_EMAILS=admin@mycompany.com,manager@mycompany.com
 SUPPORT_SLACK_CHANNEL=#customer-support
 ALERTING_SLACK_CHANNEL=#escalations
 LOGGING_SLACK_CHANNEL=#case-logs
-SLACK_BOT_TOKEN=xoxb-1234567890-1234567890-abcdefghijklmnopqrst
+SLACK_BOT_TOKEN=xoxb-your-slack-bot-token-here
 
 # App Settings
 DEBUG=true
@@ -25897,4 +25897,3 @@ The system now includes enterprise-grade features for:
 - **Operations**: Database migrations, Docker health checks, proper startup/shutdown
 
 All fixes maintain backward compatibility and follow Python best practices with comprehensive error handling and logging throughout the application.
-
