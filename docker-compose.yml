@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: case_management_db
+    environment:
+      POSTGRES_DB: case_management
+      POSTGRES_USER: ${DB_USER:-case_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-case_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-case_user} -d case_management"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - case_network
+
+  # Case Management Application
+  app:
+    build: .
+    container_name: case_management_app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${DB_USER:-case_user}:${DB_PASSWORD:-case_password}@postgres:5432/case_management
+
+      # Email Configuration
+      IMAP_SERVER: ${IMAP_SERVER:-imap.gmail.com}
+      IMAP_PORT: ${IMAP_PORT:-993}
+      IMAP_EMAIL: ${IMAP_EMAIL}
+      IMAP_PASSWORD: ${IMAP_PASSWORD}
+      ADMIN_EMAILS: ${ADMIN_EMAILS}
+
+      # Slack Configuration
+      SUPPORT_SLACK_CHANNEL: ${SUPPORT_SLACK_CHANNEL}
+      ALERTING_SLACK_CHANNEL: ${ALERTING_SLACK_CHANNEL}
+      LOGGING_SLACK_CHANNEL: ${LOGGING_SLACK_CHANNEL}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
+
+      # Application Settings
+      HOST: 0.0.0.0
+      PORT: 8000
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      EMAIL_POLL_INTERVAL: ${EMAIL_POLL_INTERVAL:-30}
+      ESCALATION_CHECK_INTERVAL: ${ESCALATION_CHECK_INTERVAL:-300}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - case_network
+    restart: unless-stopped
+
+  # Optional: pgAdmin for database management (development)
+  pgadmin:
+    image: dpage/pgadmin4:7
+    container_name: case_management_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@case.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+    networks:
+      - case_network
+    profiles:
+      - dev  # Only start with --profile dev
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  case_network:
+    driver: bridge

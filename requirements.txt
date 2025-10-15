@@ -1,0 +1,39 @@
+# Core FastAPI and web framework
+fastapi
+uvicorn[standard]
+pydantic
+
+# Database and ORM
+sqlalchemy
+alembic
+
+# Slack integration
+slack-sdk
+
+# Job scheduling
+apscheduler
+
+# Environment and configuration
+python-dotenv
+
+# Security and crypto (for webhook verification)
+cryptography
+
+# Testing
+pytest
+pytest-asyncio
+httpx
+freezegun
+
+# Development and debugging
+black
+flake8
+mypy
+
+# Logging and monitoring
+structlog
+
+# Utilities
+python-multipart
+
+requests

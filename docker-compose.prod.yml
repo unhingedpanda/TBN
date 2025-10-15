@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database (Production)
+  postgres:
+    image: postgres:15-alpine
+    container_name: case_management_db_prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-case_management_prod}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - /opt/case_management/postgres:/var/lib/postgresql/data
+    networks:
+      - case_network_prod
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-case_management_prod}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Case Management Application (Production)
+  app:
+    image: case-management:latest
+    container_name: case_management_app_prod
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-case_management_prod}
+
+      # Email Configuration
+      IMAP_SERVER: ${IMAP_SERVER}
+      IMAP_PORT: ${IMAP_PORT:-993}
+      IMAP_EMAIL: ${IMAP_EMAIL}
+      IMAP_PASSWORD: ${IMAP_PASSWORD}
+      ADMIN_EMAILS: ${ADMIN_EMAILS}
+
+      # Slack Configuration
+      SUPPORT_SLACK_CHANNEL: ${SUPPORT_SLACK_CHANNEL}
+      ALERTING_SLACK_CHANNEL: ${ALERTING_SLACK_CHANNEL}
+      LOGGING_SLACK_CHANNEL: ${LOGGING_SLACK_CHANNEL}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
+
+      # Application Settings
+      HOST: 0.0.0.0
+      PORT: 8000
+      DEBUG: false
+      LOG_LEVEL: INFO
+      EMAIL_POLL_INTERVAL: ${EMAIL_POLL_INTERVAL:-30}
+      ESCALATION_CHECK_INTERVAL: ${ESCALATION_CHECK_INTERVAL:-300}
+    networks:
+      - case_network_prod
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Reverse Proxy (nginx) for SSL termination
+  nginx:
+    image: nginx:alpine
+    container_name: case_management_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - app
+    networks:
+      - case_network_prod
+    restart: always
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  case_network_prod:
+    driver: bridge
