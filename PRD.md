@@ -388,14 +388,14 @@ DATABASE_URL=sqlite:///./case_management.db
 # Email
 IMAP_SERVER=imap.gmail.com
 IMAP_EMAIL=support@mycompany.com
-IMAP_PASSWORD=abcd-efgh-ijkl-mnop
+# IMAP_PASSWORD=your-app-password-here (example format)
 ADMIN_EMAILS=admin@mycompany.com,manager@mycompany.com
 
 # Slack
 SUPPORT_SLACK_CHANNEL=#customer-support
 ALERTING_SLACK_CHANNEL=#escalations
 LOGGING_SLACK_CHANNEL=#case-logs
-SLACK_BOT_TOKEN=xoxb-your-slack-bot-token-here
+# SLACK_BOT_TOKEN=xoxb-1234567890-1234567890-abcdefghijklmnopqrst (example format)
 
 # App Settings
 DEBUG=true
