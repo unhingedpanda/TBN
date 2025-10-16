@@ -327,10 +327,15 @@ async def slack_webhook(request: Request):
     Returns:
         dict or str: Response for successful processing or challenge response
     """
+    # Get raw body for signature verification (and potential challenge response)
+    raw_body = await request.body()
+
     # Handle URL verification challenge (required for Event Subscriptions setup)
     if request.headers.get("content-type") == "application/json":
         try:
-            event_data = await request.json()
+            # Parse JSON to check for challenge
+            import json
+            event_data = json.loads(raw_body.decode('utf-8'))
             if event_data.get("type") == "url_verification":
                 challenge = event_data.get("challenge")
                 if challenge:
@@ -338,9 +343,6 @@ async def slack_webhook(request: Request):
                     return challenge
         except:
             pass
-
-    # Get raw body for signature verification
-    raw_body = await request.body()
 
     # Get Slack signature headers
     timestamp, signature = get_slack_headers(request)
@@ -356,8 +358,9 @@ async def slack_webhook(request: Request):
         raise HTTPException(status_code=401, detail="Invalid signature")
 
     try:
-        # Parse JSON body
-        event_data = await request.json()
+        # Parse JSON body (now that we've already done it for challenge check)
+        import json
+        event_data = json.loads(raw_body.decode('utf-8'))
 
         # Process the Slack event
         result = await process_slack_event(event_data)

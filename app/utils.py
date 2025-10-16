@@ -86,18 +86,27 @@ def detect_closure_phrase(message_body: str) -> bool:
     Returns:
         bool: True if closure phrase is detected
     """
-    # Case insensitive match for the exact phrase
+    # We accept a broad set of natural phrases, order matters (more specific first)
+    # Punctuation is optional; we match word boundaries and allow extra words.
     closure_patterns = [
-        r"i'm closing this case\.",
-        r"i am closing this case\.",
-        r"closing this case\.",
-        r"case closed\.",
-        r"i'll close this case\.",
+        # Common explicit commands
+        r"\b(close|closing)\b[\s\S]*\b(case|ticket|issue)\b",
+        r"\b(case|ticket|issue)\b[\s\S]*\b(closed|resolved|complete|completed)\b",
+        # Short forms
+        r"\bclose\s+(the\s+)?(case|ticket|issue)\b",
+        r"\bclosing\s+(the\s+)?(case|ticket|issue)\b",
+        r"\b(case|ticket|issue)\s+closed\b",
+        r"\bresolve(d)?\s+(the\s+)?(case|ticket|issue)\b",
+        # Variants without the word case
+        r"\bmark\s+as\s+(closed|resolved)\b",
     ]
 
-    message_lower = message_body.lower()
+    message_lower = message_body.lower().strip()
 
-    return any(re.search(pattern, message_lower) for pattern in closure_patterns)
+    for pattern in closure_patterns:
+        if re.search(pattern, message_lower):
+            return True
+    return False
 
 
 def check_time_escalation(case: Case, escalation_hours: int = 48) -> bool:
